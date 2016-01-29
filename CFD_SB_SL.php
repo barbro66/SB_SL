@@ -3,6 +3,7 @@
 define('api_key', $_GET['key']);
 define('station',$_GET['station']);
 define('site_key', $_GET['sitekey']);
+define('not', $_GET['not']);
 
 if(isset($_GET['dist'])):
 $distance = $_GET['dist'];
@@ -13,6 +14,7 @@ endif;
 $api_key = api_key;
 $site_key = site_key;
 $station = station;
+$not = not;
 
 
 require 'coreylib.php';
@@ -43,7 +45,8 @@ $slstation = $slstation1->get('ResponseData');
 
 $slbusesmetros = array();
 
-foreach($sl->get('Buses') as $bus):
+foreach($sl->get('Bus') as $bus):
+
   $diff = strtotime($bus->get('ExpectedDateTime'))-mktime(date("s"), date("i"), date("h"), date("m")  , date("d"), date("Y"));
 	$years   = floor($diff / (365*60*60*24)); 
 	$months  = floor(($diff - $years * 365*60*60*24) / (30*60*60*24)); 
@@ -54,49 +57,21 @@ foreach($sl->get('Buses') as $bus):
 	$minutes  = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24 - 	$days*60*60*24 - $hours*60*60)/ 60); 
 
 	$seconds = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24 - 	$days*60*60*24 - $hours*60*60 - $minutes*60));
-	
+	if (intval($minutes)<15 && !(strpos($not,"bus") !== false)) {
     array_push($slbusesmetros, array("transport" => $bus->get('TransportMode'),
                                      "name" => $bus->get('Destination'),
                                      "line" => $bus->get('LineNumber'),
                                      //"departure" => (date("i", strtotime($bus->get('ExpectedDateTime'))) - date("i"))-1
                                      "departure" => $minutes
                                     ));
+}
 endforeach;
-foreach ($sl->get('Metros') as $metro):
-    /*$disprow2 = $metro->get('DisplayRow2');
-    $ptrn_times = "/[a-zA-ZåäöÅÄÖ .]+/"; //Gives times
-    $ptrn_names = "/[0-9]+/"; //Gives names
-    $matches_times = preg_split($ptrn_times, $disprow2, NULL, PREG_SPLIT_OFFSET_CAPTURE);
-    $matches_names = preg_split($ptrn_names, $disprow2, NULL, PREG_SPLIT_OFFSET_CAPTURE);
-    // $matches_times[1][0] and $matches_times[3][0] gives times
-    // $matches_names[1][0] and $matches_names[3][0] gives names
+//print(($sl->get('Metros xmlns="http://sl.se/Departures.xsd"'));
+
+foreach ($sl->get('Metro') as $metro):
     
-    
-    
-    $pattern = "/.*[^min]/";
-    $str = $metro->get('DisplayRow1');
-    $matches= array();
-    preg_match($pattern, $str, $matches);
-    $newstr = preg_replace('/( min)/', '', $matches[0]);
-    //array_push($slbusesmetros, array("transport" => $metro->get('TransportMode'),
-      //                               "name" => preg_replace('/[^a-zA-Z åäöÅÄÖ]/', '', $newstr),
-      //                               "line" => $metro->get('GroupOfLine'),
-      //                               "departure" => (trim(preg_match('/[ ][^a-zA-Z åäöÅÄÖ]+[ ]/',$metro->get('DisplayRow1'))))
-      //                              ));
-    
-    array_push($slbusesmetros, array("transport" => $metro->get('TransportMode'),
-                                     "name" => $matches_names[1][0],
-                                     "line" => $metro->get('GroupOfLine'),
-                                     "departure" => $matches_times[1][0]
-                                    ));
-    
-    array_push($slbusesmetros, array("transport" => $metro->get('TransportMode'),
-                                     "name" => $matches_names[3][0],
-                                     "line" => $metro->get('GroupOfLine'),
-                                     "departure" => $matches_times[3][0]
-                                    ));
-    */
-    
+    $testname=$metro->get('Destination');
+
     $diff = strtotime($metro->get('DisplayTime'))-mktime(date("s"), date("i"), date("h"), date("m")  , date("d"), date("Y"));
 	$years   = floor($diff / (365*60*60*24)); 
 	$months  = floor(($diff - $years * 365*60*60*24) / (30*60*60*24)); 
@@ -107,17 +82,22 @@ foreach ($sl->get('Metros') as $metro):
 	$minutes  = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24 - 	$days*60*60*24 - $hours*60*60)/ 60); 
 
 	$seconds = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24 - 	$days*60*60*24 - $hours*60*60 - $minutes*60));
+//	print($not);
+//	print($metro->get('Destination'));
+//	if ((strpos("Akalla",($metro->get('Destination')))!==false)) {print 'found';}
 	
+//	print(strpos($not,$metro->get('Destination')));
+	if (intval($minutes)<25 && !(strpos($not,"metro") !== false)  ) {
     array_push($slbusesmetros, array("transport" => $metro->get('TransportMode'),
                                      "name" => $metro->get('Destination'),
                                      "line" => $metro->get('GroupOfLine'),
                                      //"departure" => (date("i", strtotime($bus->get('ExpectedDateTime'))) - date("i"))-1
                                      "departure" => $minutes
                                     ));
-    
+    }
 endforeach;
 
-foreach ($sl->get('Trams') as $tram):
+foreach ($sl->get('Tram') as $tram):
 	$diff = strtotime($tram->get('ExpectedDateTime'))-mktime(date("s"), date("i"), date("h"), date("m")  , date("d"), date("Y"));
 	$years   = floor($diff / (365*60*60*24)); 
 	$months  = floor(($diff - $years * 365*60*60*24) / (30*60*60*24)); 
@@ -137,7 +117,7 @@ foreach ($sl->get('Trams') as $tram):
                                     ));
 endforeach;
 
-foreach ($sl->get('Trains') as $train):
+foreach ($sl->get('Train') as $train):
 	$diff = strtotime($train->get('ExpectedDateTime'))-mktime(date("s"), date("i"), date("h"), date("m")  , date("d"), date("Y"));
 	$years   = floor($diff / (365*60*60*24)); 
 	$months  = floor(($diff - $years * 365*60*60*24) / (30*60*60*24)); 
@@ -148,13 +128,14 @@ foreach ($sl->get('Trains') as $train):
 	$minutes  = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24 - 	$days*60*60*24 - $hours*60*60)/ 60); 
 
 	$seconds = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24 - 	$days*60*60*24 - $hours*60*60 - $minutes*60));
-	
+	if (intval($minutes)<25 && !(strpos($not,"train") !== false) )  {
     array_push($slbusesmetros, array("transport" => $train->get('TransportMode'),
                                      "name" => $train->get('Destination'),
                                      "line" => $train->get('GroupOfLine'),
                                      //"departure" => (date("i", strtotime($bus->get('ExpectedDateTime'))) - date("i"))-1
                                      "departure" => $minutes
                                     ));
+	}
 endforeach;
 
 
@@ -175,11 +156,11 @@ function aasort (&$array, $key) {
 aasort($slbusesmetros,"departure");
 
 ?>
-<table id="SLRealtime">
+<table id="SLRealtime" data-refresh-every-n-seconds=30>
     <tr>
         <th style="width:3%"></th>
         <th style="width:75px;text-align:center"><img src="http://images2.wikia.nocookie.net/__cb20100824161519/logopedia/images/c/ca/SL_logo.svg" height="30px" /></th>
-        <th style="padding-left:20"><?php echo 'Avgångar för: '.$slstation[0]->get('Name').' om '.$distance.' min'; ?></th>
+        <th style="padding-left:20"><?php echo $slstation[0]->get('Name').' om '.$distance.' min'; ?></th>
         <th style="width:12%;text-align:center">min.</th>
     </tr>
 <?php foreach($slbusesmetros as $dps): 
@@ -238,6 +219,7 @@ aasort($slbusesmetros,"departure");
     <?php } //endif ?>
   <?php endforeach ?>
   
+
 
 </table>
 <?php
